@@ -1,22 +1,26 @@
 <?php 
 // auteur: studentnaam
-// functie: 
+// functie: verwijderen klant
 
 // Autoloader classes via composer
 require '../../vendor/autoload.php';
 use Bas\classes\Klant;
 
-if(isset($_POST["verwijderen"])){
-	
-	// Maak een object Klant
-	
-	
-	// Delete Klant op basis van NR
-	
+if (isset($_POST['verwijderen']) && isset($_POST['klantId'])) {
+	$klant = new Klant();
+	$klantId = (int)$_POST['klantId'];
 
-	echo '<script>alert("Klant verwijderd")</script>';
-	echo "<script> location.replace('read.php'); </script>";
+	if ($klantId > 0 && $klant->deleteKlant($klantId)) {
+		header('Location: read.php?deleted=1');
+		exit;
+	}
+
+	header('Location: read.php?deleted=0');
+	exit;
 }
+
+header('Location: read.php');
+exit;
 ?>
 
 

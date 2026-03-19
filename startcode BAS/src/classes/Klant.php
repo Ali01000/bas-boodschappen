@@ -17,49 +17,52 @@ class Klant extends Database{
 	
 	/**
 	 * Summary of crudKlant
+	 * @param string $zoeknaam
 	 * @return void
 	 */
-	public function crudKlant() : void {
-		// Haal alle klant op uit de database mbv de method getKlant()
-		$lijst = $this->getKlanten();
+	public function crudKlant(string $zoeknaam = "") : void {
+		// Haal alle klanten op uit de database mbv de method getKlanten()
+		$lijst = $this->getKlanten($zoeknaam);
 
 		// Print een HTML tabel van de lijst	
 		$this->showTable($lijst);
 	}
 
 	/**
-	 * Summary of getKlant
-	 * @return mixed
+	 * Summary of getKlanten
+	 * @param string $zoeknaam
+	 * @return array
 	 */
-	public function getKlanten() : array {
-		// testdata
-		$lijst = [
-            ['klantId' => 1, 'klantEmail' => 'test1@example.com', 'klantNaam' => 'Test 1', 'klantWoonplaats' => 'City 1'],
-            ['klantId' => 2, 'klantEmail' => 'test2@example.com', 'klantNaam' => 'Test 2', 'klantWoonplaats' => 'City 2']
-            // Add more expected data as needed
-        ];
+	public function getKlanten(string $zoeknaam = "") : array {
+		try {
+			if (!empty(trim($zoeknaam))) {
+				$stmt = self::$conn->prepare("SELECT * FROM $this->table_name WHERE klantNaam LIKE :zoek OR klantEmail LIKE :zoek OR klantWoonplaats LIKE :zoek");
+				$zoekTerm = '%' . trim($zoeknaam) . '%';
+				$stmt->execute([':zoek' => $zoekTerm]);
+			} else {
+				$stmt = self::$conn->query("SELECT * FROM $this->table_name ORDER BY klantNaam ASC");
+			}
 
-		// Doe een query: dit is een prepare en execute in 1 zonder placeholders
-		// $lijst = $conn->query("select invullen")->fetchAll();
-		
-		return $lijst;
+			return $stmt->fetchAll();
+		} catch (\PDOException $e) {
+			return [];
+		}
 	}
 
  /**
   * Summary of getKlant
   * @param int $klantId
-  * @return mixed
+  * @return array
   */
 	public function getKlant(int $klantId) : array {
-
-		// Doe een fetch op $klantId
-		
-		// testdata
-		$lijst = 
-            ['klantId' => 1, 'klantEmail' => 'test1@example.com', 'klantNaam' => 'Test 1', 'klantWoonplaats' => 'City 1']
-        ;
-
-		return $lijst;
+		try {
+			$stmt = self::$conn->prepare("SELECT * FROM $this->table_name WHERE klantId = :klantId LIMIT 1");
+			$stmt->execute([':klantId' => $klantId]);
+			$klant = $stmt->fetch();
+			return $klant ? $klant : [];
+		} catch (\PDOException $e) {
+			return [];
+		}
 	}
 	
 	public function dropDownKlant($row_selected = -1){
@@ -109,9 +112,10 @@ class Klant extends Database{
 			//Delete
 			$txt .=  "<td>";
 			$txt .= " 
-            <form method='post' action='delete.php?klantId={$row['klantId']}' >       
+            <form method='post' action='delete.php'>       
+                <input type='hidden' name='klantId' value='{$row['klantId']}'>
                 <button name='verwijderen'>Verwijderen</button>	 
-            </form> </td>";	
+            </form> </td>";
 			$txt .= "</tr>";
 		}
 		$txt .= "</table>";
@@ -125,14 +129,28 @@ class Klant extends Database{
   * @return bool
   */
 	public function deleteKlant(int $klantId) : bool {
-
-		return true;
-	
+		try {
+			$stmt = self::$conn->prepare("DELETE FROM $this->table_name WHERE klantId = :klantId");
+			return $stmt->execute([':klantId' => $klantId]);
+		} catch (\PDOException $e) {
+			return false;
+		}
 	}
 
 	public function updateKlant($row) : bool{
-
-		return true;
+		try {
+			$stmt = self::$conn->prepare("UPDATE $this->table_name SET klantNaam = :klantNaam, klantEmail = :klantEmail, klantAdres = :klantAdres, klantPostcode = :klantPostcode, klantWoonplaats = :klantWoonplaats WHERE klantId = :klantId");
+			return $stmt->execute([
+				':klantNaam' => $row['klantNaam'] ?? '',
+				':klantEmail' => $row['klantEmail'] ?? '',
+				':klantAdres' => $row['klantAdres'] ?? '',
+				':klantPostcode' => $row['klantPostcode'] ?? '',
+				':klantWoonplaats' => $row['klantWoonplaats'] ?? '',
+				':klantId' => $row['klantId'] ?? 0
+			]);
+		} catch (\PDOException $e) {
+			return false;
+		}
 	}
 	
 	
